@@ -2,8 +2,8 @@ import asyncio
 
 import websockets
 
-from crewmate import BaseCrewmate, CrewmateProperty
-from util import MessageTypes, MessageFields
+from .crewmate import BaseCrewmate, CrewmateProperty
+from .util import MessageTypes, MessageFields
 import os
 
 # raspberry pi imports
@@ -49,8 +49,12 @@ class LightningFlash(BaseCrewmate):
 
 
 
+async def main():
+    """Main entry point for the LightningFlash crewmate"""
+    lightning = LightningFlash()
+    await lightning.start()
+
+
 if __name__ == "__main__":
-    qm = LightningFlash()
-    asyncio.get_event_loop().run_until_complete(qm.start())
-    asyncio.get_event_loop().run_forever()
+    asyncio.run(main())
 

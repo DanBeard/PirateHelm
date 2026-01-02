@@ -1,6 +1,6 @@
 import asyncio
-from crewmates.crewmate import BaseCrewmate, CrewmateProperty
-from crewmates.pumpkins import VIDEOS as PUMPKIN_VIDEOS
+from .crewmate import BaseCrewmate, CrewmateProperty
+from .pumpkins import VIDEOS as PUMPKIN_VIDEOS
 
 
 class QM_STATES:
@@ -41,7 +41,11 @@ class QuarterMaster(BaseCrewmate):
     #     self.state = QM_STATES.QUIET
     #     await self.command("PUMPKINS", {"command": "SING", "song_name": song_name})
 
-if __name__ == "__main__":
+async def main():
+    """Main entry point for the QuarterMaster crewmate"""
     qm = QuarterMaster()
-    asyncio.get_event_loop().run_until_complete(qm.start())
-    asyncio.get_event_loop().run_forever()
+    await qm.start()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

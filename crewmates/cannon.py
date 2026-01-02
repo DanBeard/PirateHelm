@@ -1,6 +1,6 @@
 import asyncio
-from crewmate import BaseCrewmate, CrewmateProperty
-from util import MessageTypes, MessageFields
+from .crewmate import BaseCrewmate, CrewmateProperty
+from .util import MessageTypes, MessageFields
 import os
 
 # raspberry pi imports
@@ -99,8 +99,12 @@ class Cannon(BaseCrewmate):
 
 
 
+async def main():
+    """Main entry point for the Cannon crewmate"""
+    cannon = Cannon()
+    await cannon.start()
+
+
 if __name__ == "__main__":
-    qm = Cannon()
-    asyncio.get_event_loop().run_until_complete(qm.start())
-    asyncio.get_event_loop().run_forever()
+    asyncio.run(main())
 

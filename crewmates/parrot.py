@@ -1,7 +1,7 @@
 import asyncio
 import alsaaudio
-from crewmate import BaseCrewmate, CrewmateProperty
-from util import MessageTypes, MessageFields
+from .crewmate import BaseCrewmate, CrewmateProperty
+from .util import MessageTypes, MessageFields
 import os
 from playsound import playsound
 import numpy as np
@@ -89,9 +89,8 @@ class Parrot(BaseCrewmate):
 
     async def on_connection(self, ws):
         # start the parrot when we connect
-        loop = asyncio.get_event_loop()
-        loop.create_task(self.squawk_forever())
-        loop.create_task(self.pan_forever())
+        asyncio.create_task(self.squawk_forever())
+        asyncio.create_task(self.pan_forever())
         await self.set_volume(MAX_SQUAK_VOL)
         await self.on_prop_change("PUMPKINS", "singing", self.on_pumpkin_singing_change)
 
@@ -138,10 +137,10 @@ class Parrot(BaseCrewmate):
 
 
     async def squawk(self):
-        loop = asyncio.get_event_loop()
         if self._dance_instead:
             return
 
+        loop = asyncio.get_running_loop()
         await asyncio.gather(
             loop.run_in_executor(None, self._squawk_blocking),
             self._animate(time.perf_counter()))
@@ -216,8 +215,12 @@ class Parrot(BaseCrewmate):
 
 
 
+async def main():
+    """Main entry point for the Parrot crewmate"""
+    parrot = Parrot()
+    await parrot.start()
+
+
 if __name__ == "__main__":
-    qm = Parrot()
-    asyncio.get_event_loop().run_until_complete(qm.start())
-    asyncio.get_event_loop().run_forever()
+    asyncio.run(main())
 

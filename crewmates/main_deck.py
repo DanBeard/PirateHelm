@@ -3,8 +3,8 @@ from collections import defaultdict
 
 import websockets
 from websockets.exceptions import ConnectionClosed
-import json
-from util import MessageTypes, MessageFields, shout_server
+import msgpack
+from .util import MessageTypes, MessageFields, shout_server
 
 
 class MainDeck:
@@ -23,7 +23,7 @@ class MainDeck:
         my_address = None
         try:
             async for rawmsg in ws:
-                msg = json.loads(rawmsg)
+                msg = msgpack.unpackb(rawmsg, raw=False)
                 print(msg)
 
                 # handling here
@@ -56,22 +56,26 @@ class MainDeck:
             await self.beacon_manifest()
 
     async def send_manifest(self, ws, to_address):
-        await ws.send(json.dumps({
+        await ws.send(msgpack.packb({
             MessageFields.TYPE: MessageTypes.MANIFEST,
             MessageFields.ADDRESS: to_address,
             MessageFields.DATA: self.manifest
-        }))
+        }, use_bin_type=True))
 
     async def beacon_manifest(self):
         for listener in self.subs["*"]:
             await self.send_manifest(listener, "*")
 
 
-if __name__ == "__main__":
+async def main():
+    """Main entry point - starts the WebSocket server and UDP discovery"""
     md = MainDeck()
-    start_server = websockets.serve(md.start, "0.0.0.0", 31337)
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(start_server)
-    loop.run_until_complete(shout_server())
-    loop.run_forever()
+    async with websockets.serve(md.start, "0.0.0.0", 31337):
+        await shout_server()
+        # Run forever
+        await asyncio.Future()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
 

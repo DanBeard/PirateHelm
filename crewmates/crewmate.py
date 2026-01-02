@@ -1,8 +1,8 @@
 import asyncio
-import json
+import msgpack
 import os
 import http
-from util import MessageTypes, MessageFields, shout_client
+from .util import MessageTypes, MessageFields, shout_client
 import websockets
 
 
@@ -69,10 +69,10 @@ class BaseCrewmate:
 
     async def on_prop_change(self, crewmate, prop, async_handler):
         self._notify_listeners.append((crewmate, prop, async_handler))
-        await self.ws.send(json.dumps({
+        await self.ws.send(msgpack.packb({
             MessageFields.TYPE: MessageTypes.SUBSCRIBE,
             MessageFields.ADDRESS: crewmate
-        }))
+        }, use_bin_type=True))
 
     async def _handle_msg(self, msg):
         """ Do NOT overwrite this """
@@ -97,22 +97,22 @@ class BaseCrewmate:
         print("Boarding the good ship: " + self._uri)
         async with websockets.connect(self._uri) as ws:
             try:
-                await ws.send(json.dumps({
+                await ws.send(msgpack.packb({
                     MessageFields.TYPE: MessageTypes.SET_ADDRESS,
                     MessageFields.ADDRESS: self.address
-                }))
-                await ws.send(json.dumps({
+                }, use_bin_type=True))
+                await ws.send(msgpack.packb({
                     MessageFields.TYPE: MessageTypes.SUBSCRIBE,
                     MessageFields.ADDRESS: self.address
-                }))
+                }, use_bin_type=True))
                 await asyncio.sleep(0.01)
                 self.ws = ws
                 self.on_deck = True
                 await self.on_connection(ws)
                 async for msg in ws:
-                    asyncio.create_task(self._handle_msg(json.loads(msg)))
+                    asyncio.create_task(self._handle_msg(msgpack.unpackb(msg, raw=False)))
                     for p in self.proxy_ws:
-                        print("Proxy Send"+msg)
+                        print("Proxy Send")
                         await p.send(msg)
 
             except ConnectionError as e:
@@ -184,16 +184,16 @@ class BaseCrewmate:
             await self.notify({"prop": prop.public_name, "val": prop.value})
 
     async def notify(self, data):
-        await self.ws.send(json.dumps({MessageFields.TYPE: MessageTypes.NOTIFY,
-                                       MessageFields.ADDRESS: self.address,
-                                       MessageFields.FROM: self.address,
-                                       MessageFields.DATA: data}))
+        await self.ws.send(msgpack.packb({MessageFields.TYPE: MessageTypes.NOTIFY,
+                                          MessageFields.ADDRESS: self.address,
+                                          MessageFields.FROM: self.address,
+                                          MessageFields.DATA: data}, use_bin_type=True))
 
     async def command(self, address, data):
-        await self.ws.send(json.dumps({MessageFields.TYPE: MessageTypes.COMMAND,
-                                       MessageFields.ADDRESS: address,
-                                       MessageFields.FROM: self.address,
-                                       MessageFields.DATA: data}))
+        await self.ws.send(msgpack.packb({MessageFields.TYPE: MessageTypes.COMMAND,
+                                          MessageFields.ADDRESS: address,
+                                          MessageFields.FROM: self.address,
+                                          MessageFields.DATA: data}, use_bin_type=True))
 
 
 if __name__ == "__main__":

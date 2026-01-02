@@ -3,8 +3,8 @@ import json
 
 import requests
 
-from crewmate import BaseCrewmate, CrewmateProperty
-from util import MessageTypes, MessageFields
+from .crewmate import BaseCrewmate, CrewmateProperty
+from .util import MessageTypes, MessageFields
 import os
 import random
 import xmltodict
@@ -166,7 +166,11 @@ class BlockingPumpkins:
         return xmltodict.parse(resp.content)
 
 
+async def main():
+    """Main entry point for the Pumpkins crewmate"""
+    pumpkins = Pumpkins()
+    await pumpkins.start()
+
+
 if __name__ == "__main__":
-    qm = Pumpkins()
-    asyncio.get_event_loop().run_until_complete(qm.start())
-    asyncio.get_event_loop().run_forever()
+    asyncio.run(main())

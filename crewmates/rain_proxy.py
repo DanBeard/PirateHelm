@@ -2,8 +2,8 @@ import asyncio
 
 import websockets
 
-from crewmate import BaseCrewmate, CrewmateProperty
-from util import MessageTypes, MessageFields
+from .crewmate import BaseCrewmate, CrewmateProperty
+from .util import MessageTypes, MessageFields
 import os
 
 # raspberry pi imports
