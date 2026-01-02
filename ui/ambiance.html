@@ -17,6 +17,8 @@
     <audio id="sndcannon" src="sounds/nri-cannon.mp3" hidden preload="auto"></audio>
     <audio id="sndsplash" src="sounds/splash.mp3" hidden preload="auto"></audio>
     <audio id="sndthunder" src="sounds/thunder.wav" hidden preload="auto"></audio>
+    <!-- msgpack for binary WebSocket communication -->
+    <script src="https://cdn.jsdelivr.net/npm/@msgpack/msgpack@3.0.0/dist/msgpack.min.js"></script>
 </head>
 
 <body style="border: 0; margin:0; padding:0; width:100%; height:100%; background: black; overflow: hidden">
@@ -43,6 +45,7 @@
 
 <script>
     const URI = "ws://localhost:31337"
+    const { encode, decode } = MessagePack;  // msgpack encoder/decoder
     const throttleDrawEvery=1;
     let frame = 0;
 
@@ -55,29 +58,30 @@
     });
 
     const ws = new WebSocket(URI);
+    ws.binaryType = "arraybuffer";  // Required for msgpack binary data
     ws.addEventListener("open", ()=>{
         // add ourselves to manifest
-        ws.send(JSON.stringify({
+        ws.send(encode({
             type : "SA",
             address: "AMBIANCE"
         }));
         //subscribe to our events
-        ws.send(JSON.stringify({
+        ws.send(encode({
             type : "S",
             address:"AMBIANCE"
         }));
         // subscribe to cannon events as well
-        ws.send(JSON.stringify({
+        ws.send(encode({
             type : "S",
             address:"CANNON"
         }));
         // subscribe to PUMPKINS events as well
-        ws.send(JSON.stringify({
+        ws.send(encode({
             type : "S",
             address:"PUMPKINS"
         }));
         // subscribe to RAIN events as well
-        ws.send(JSON.stringify({
+        ws.send(encode({
             type : "S",
             address:"RAIN"
         }));
@@ -145,9 +149,8 @@
 
         // WS msg routing
         ws.addEventListener("message", (rawMsg)=>{
-
-            let msg = JSON.parse(rawMsg.data);
-             console.log(msg)
+            let msg = decode(new Uint8Array(rawMsg.data));  // Decode msgpack binary data
+            console.log(msg)
             switch (msg.address) {
                 case "AMBIANCE":
                     // do we have any commands?

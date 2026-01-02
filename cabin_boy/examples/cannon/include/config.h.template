@@ -1,0 +1,24 @@
+/**
+ * CabinBoy Cannon Configuration Template
+ *
+ * Copy this file to config.h and update with your settings.
+ * The config.h file is gitignored to protect your credentials.
+ *
+ * Alternatively, set these values in platformio.ini build_flags.
+ */
+
+#ifndef CONFIG_H
+#define CONFIG_H
+
+// WiFi credentials
+#define WIFI_SSID "YourWiFiSSID"
+#define WIFI_PASSWORD "YourWiFiPassword"
+
+// GPIO pins
+#define LIGHT_PIN 5    // Flash/strobe light
+#define SMOKE_PIN 18   // Smoke machine momentary switch
+
+// Debug mode (1 = enabled, 0 = disabled)
+#define CABIN_BOY_DEBUG 1
+
+#endif // CONFIG_H

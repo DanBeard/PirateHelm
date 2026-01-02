@@ -51,7 +51,7 @@ const Quartermaster = (canvas, ws) => {
 
     document.addEventListener('keyup', event => {
         if (event.key === 's') {
-            ws.send(JSON.stringify({
+            ws.send(MessagePack.encode({
                 type : "C",
                 address: "PUMPKINS",
                 data:{command:"SING"}

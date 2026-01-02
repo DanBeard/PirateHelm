@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Rain</title>
+    <title>Rain (CSS)</title>
+    <!-- msgpack for binary WebSocket communication -->
+    <script src="https://cdn.jsdelivr.net/npm/@msgpack/msgpack@3.0.0/dist/msgpack.min.js"></script>
 </head>
 <body>
 
@@ -57,9 +59,10 @@ hr {
   let delay = (ms) => new Promise((res)=>setTimeout(res,ms));
   const body = document.getElementById("body")
   let pumpkins_singing = false;
+  const { encode, decode } = MessagePack;  // msgpack encoder/decoder
   async function lightning() {
                 if(pumpkins_singing) return;
-                ws.send(JSON.stringify({
+                ws.send(encode({
                             type:"N",
                             address:"RAIN",
                             from: "RAIN",
@@ -77,7 +80,7 @@ hr {
              await delay(16);
         }
 
-        ws.send(JSON.stringify({
+        ws.send(encode({
                             type:"N",
                             address:"RAIN",
                             from: "RAIN",
@@ -87,31 +90,32 @@ hr {
 
     const URI = "ws://localhost:31336" // 1336 because proxy
     const ws = new WebSocket(URI);
+    ws.binaryType = "arraybuffer";  // Required for msgpack binary data
     ws.addEventListener("open", ()=>{
         // add ourselves to manifest
-        ws.send(JSON.stringify({
+        ws.send(encode({
             type : "SA",
             address: "RAIN"
         }));
         //subscribe to our events
-        ws.send(JSON.stringify({
+        ws.send(encode({
             type : "S",
             address:"RAIN"
         }));
         // subscribe to cannon events as well
-        ws.send(JSON.stringify({
+        ws.send(encode({
             type : "S",
             address:"CANNON"
         }));
         // subscribe to PUMPKINS events as well
-        ws.send(JSON.stringify({
+        ws.send(encode({
             type : "S",
             address:"PUMPKINS"
         }));
         // init listener
         ws.addEventListener("message", (rawMsg)=>{
             console.log(rawMsg)
-            let msg = JSON.parse(rawMsg.data);
+            let msg = decode(new Uint8Array(rawMsg.data));  // Decode msgpack binary data
             switch (msg.address) {
                 case "RAIN":
                     // do we have any commands?

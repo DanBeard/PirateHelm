@@ -58,18 +58,20 @@ class CrewShout(DatagramProtocol):
 
 
 async def shout_server():
-    _, deck_shouter = await asyncio.get_event_loop().create_datagram_endpoint(lambda: CrewShout(True), ("0.0.0.0", MCAST_PORT))
+    loop = asyncio.get_running_loop()
+    _, deck_shouter = await loop.create_datagram_endpoint(lambda: CrewShout(True), ("0.0.0.0", MCAST_PORT))
     deck_shouter.server_shout()
 
 
 async def shout_client():
+    loop = asyncio.get_running_loop()
     port_offset = 0
     succ = False
     # try different ports in case there's multiple clients on one host
     while not succ and port_offset < 100:
         try:
             shout = CrewShout(False)
-            _, deck_shouter = await asyncio.get_event_loop().create_datagram_endpoint(lambda: shout, ("0.0.0.0", MCAST_PORT+port_offset))
+            _, deck_shouter = await loop.create_datagram_endpoint(lambda: shout, ("0.0.0.0", MCAST_PORT+port_offset))
             while len(shout.servers_found) == 0:
                 print("~LFC~")
                 deck_shouter.shout()

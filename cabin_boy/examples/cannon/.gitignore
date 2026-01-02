@@ -1,0 +1,11 @@
+# PlatformIO
+.pio/
+.pioenvs/
+.piolibdeps/
+
+# IDE
+.vscode/
+.idea/
+
+# WiFi credentials (use config.h.template as reference)
+include/config.h

@@ -1,0 +1,20 @@
+# Wokwi Simulator Configuration for CabinBoy Cannon
+#
+# This allows testing the ESP32 cannon in a browser-based simulator
+# with real WiFi/WebSocket support!
+#
+# Usage:
+# 1. Build with: pio run -e esp32-s3
+# 2. Open in Wokwi: https://wokwi.com/
+# 3. Import this project
+# 4. Start MainDeck on your dev machine: python3 crewmates/main_deck.py
+# 5. Run simulation - it will connect to your real MainDeck!
+
+[wokwi]
+version = 1
+firmware = ".pio/build/esp32-s3/firmware.bin"
+elf = ".pio/build/esp32-s3/firmware.elf"
+
+# Optional: Set a fixed gateway for consistent networking
+# [wokwi.network]
+# gateway = "wokwi-gateway"

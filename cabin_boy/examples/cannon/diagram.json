@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "author": "PirateHelm Crew",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-s3-devkitc-1",
+      "id": "esp",
+      "top": 0,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-led",
+      "id": "light",
+      "top": 60,
+      "left": 250,
+      "attrs": {
+        "color": "yellow",
+        "label": "LIGHT (GPIO5)"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "smoke",
+      "top": 120,
+      "left": 250,
+      "attrs": {
+        "color": "white",
+        "label": "SMOKE (GPIO18)"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "top": 60,
+      "left": 200,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r2",
+      "top": 120,
+      "left": 200,
+      "attrs": {
+        "value": "220"
+      }
+    }
+  ],
+  "connections": [
+    ["esp:5", "r1:1", "yellow", ["h10"]],
+    ["r1:2", "light:A", "yellow", ["h10"]],
+    ["light:C", "esp:GND.1", "black", ["v20", "h-50"]],
+    ["esp:18", "r2:1", "white", ["h10"]],
+    ["r2:2", "smoke:A", "white", ["h10"]],
+    ["smoke:C", "esp:GND.2", "black", ["v20", "h-50"]]
+  ],
+  "serialMonitor": {
+    "display": "auto"
+  }
+}

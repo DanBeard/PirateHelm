@@ -1,28 +1,55 @@
 # Pirate Automation
 
-This system is used to coordinate and control the pirate props. 
+This system is used to coordinate and control Halloween pirate props using modern Python and efficient binary messaging.
 
 ## Requirements
+### Software
+- Python 3.8 or higher (tested with Python 3.12)
+- `uv` package manager (installs automatically, see below)
+
 ### Hardware
-- Python 3.8 or higher
 - Ethernet (wifi or wired)
-- GPIOs
+- Raspberry Pi (for GPIO control - optional for testing)
+- ESP32 boards (optional - for lightweight embedded props via CabinBoy library)
 
-For prop control itself this makes embedded linux maker boards like The Raspberry Pi or Beaglebone black perfect candidates
-Given the loosely coupled architecture, logic can be tested on one system and moved to another at will.
-
+The loosely coupled architecture allows testing on any system and deploying to Raspberry Pi or ESP32 for actual prop control.
 
 ## Installing
-install global requirements through pip via:
-`pip install -r requirements.txt`
-(pip3 may be required depending on your default python install)
 
-You may need to intall the Adafruit GPIO library depending on your platform
+### Quick Start (Desktop/Testing)
+```bash
+# Install with uv (uv will be installed automatically if needed)
+uv pip install -e .
+```
 
-Raspberry Pi: `sudo pip3 install RPI.GPIO pyalsaaudio`
+### Raspberry Pi (with GPIO support)
+```bash
+# Install with GPIO and audio support
+uv pip install -e ".[rpi]"
 
-Beaglebone Black: `sudo pip3 install Adafruit_BBIO`
+# Additional system packages for servo control
+sudo apt-get install -y python-smbus i2c-tools
+sudo raspi-config  # Enable I2C interface
+```
 
+### Optional Audio Support
+If you need audio playback (for ambiance.py and parrot.py):
+```bash
+# Note: playsound has compatibility issues with Python 3.12+
+uv pip install -e ".[audio]"
+```
+
+### ESP32 (CabinBoy Library)
+For lightweight embedded props using ESP32 microcontrollers:
+```bash
+cd cabin_boy/examples/cannon
+
+# Edit platformio.ini to set WiFi credentials, then:
+pio run -t upload -e esp32-s3
+pio device monitor
+```
+
+See `cabin_boy/README.md` for full documentation of the CabinBoy Arduino/ESP32 library.
 
 ## Running
 `python3 ./crewmates/main_deck.py`
@@ -43,7 +70,6 @@ AHOY ->  192.168.1.176
 
 and the log from the crewmate should look something like:
 ```commandline
-on BBB
 registering firing
 registering jammed
 registering loading
@@ -56,28 +82,101 @@ Boarding the good ship: ws://192.168.1.176:31337
 ## User Interface
 Run server.sh to launch a simple HTTP server that hosts the user interface and other assets.
 
-captain.html includes a drag-and-droppable UI to help visualize prop placement and current status of props.
-![captain.html](./docs/images/captain.html.gif)
-
-mobile.html includes a simplified command menu for quick actions during Halloween. 
+**mobile.html** (RECOMMENDED) - Simplified command menu with full msgpack support for quick actions during Halloween
 ![mobile.html](./docs/images/mobile.html.gif)
 
+**captain.html** - Drag-and-droppable UI to visualize prop placement and status (note: needs msgpack JS updates for full functionality)
+![captain.html](./docs/images/captain.html.gif)
+
 ## Architecture
-The achitecture is standard Pub/Sub message passing. All classes and concepts use nautically themed names. 
-(E.g. the broker is "the main deck", clients are "crewmates", connection announcements use "AHOY", etc)
+The architecture is standard Pub/Sub message passing with all classes using nautically themed names:
+- Broker: "Main Deck"
+- Clients: "Crewmates"
+- Discovery: UDP multicast with "AHOY" greetings
 
-Each prop has its own python class to control the actual thing. It discovers the main deck using UDP multicast and establishes a websocket connection.
-command messages can be sent by any crewmate (UI or other prop) and are handled through the handle_command() method. Dynamic propeties are constructed through CrewmateProperty() 
-and when assigned to automatically send a notification message that can be subscribed to by other crewmates. See the "cannon.py" crewmate file for a simple example.
+### Key Features
+- **msgpack Binary Serialization**: Efficient binary encoding over WebSockets (replaces JSON for smaller, faster messages)
+- **UDP Multicast Discovery**: Crewmates automatically find the Main Deck on port 31338
+- **Modern asyncio**: Python 3.12-compatible async patterns for cooperative multitasking
+- **Dynamic Properties**: `CrewmateProperty()` descriptors auto-notify subscribers when values change
+- **Platform Detection**: Gracefully handles GPIO availability (Raspberry Pi vs desktop testing)
 
-asyncio is used for cooperative multi-tasking. This is preferred over threading due to limited CPU on the target systems, the ease of determining order of operations and to avoid the need to lock or worry about GIL.
+Each prop has its own Python class that discovers the main deck using UDP multicast and establishes a WebSocket connection. Commands are handled via `handle_command()` method, and dynamic properties automatically broadcast changes to subscribers.
 
-The user interface is standard Javascript. It uses websockets to connect to the "main deck" the same as python crewmates and fabric.js to draw on the canvas.
+The user interface uses JavaScript with WebSockets to connect to the main deck (same protocol as Python crewmates) and fabric.js for canvas rendering.
 
+### ESP32 Support (CabinBoy)
+The `cabin_boy/` directory contains a PlatformIO-compatible Arduino library for ESP32 microcontrollers. CabinBoy implements the same protocol as Python crewmates:
+- UDP multicast discovery ("AHOY" / "WELCOME ABOARD")
+- WebSocket connection to MainDeck on port 31337
+- msgpack binary message serialization
+- Property notifications and command handling
+
+This allows lightweight embedded props to join the fleet alongside Raspberry Pi and browser-based crewmates.
 
 ### Message Types
-See util.py for the message types and keys. 
+See `util.py` for message type constants and field definitions. All messages use msgpack binary encoding. 
 
+
+## Testing
+
+PirateHelm supports testing without physical hardware - ye can test in dry dock before takin' the ship to sea!
+
+### Python Crewmate Tests
+
+Run the test suite with pytest:
+
+```bash
+# Install dev dependencies
+uv pip install -e ".[dev]"
+
+# Run all tests
+pytest
+
+# Run with verbose output
+pytest -v
+
+# Run specific test file
+pytest tests/test_cannon.py
+
+# Run only unit tests (fast, no network)
+pytest tests/test_protocol.py
+
+# Run integration tests (requires MainDeck)
+pytest tests/test_main_deck.py -v
+```
+
+Tests include:
+- **test_protocol.py**: msgpack message format verification
+- **test_cannon.py**: Cannon crewmate behavior (mocked GPIO)
+- **test_main_deck.py**: WebSocket server and message routing
+
+### ESP32 CabinBoy Tests
+
+For ESP32 unit tests (runs on desktop without hardware):
+
+```bash
+cd cabin_boy/examples/cannon
+
+# Run desktop unit tests (msgpack only, no WiFi)
+pio test -e native
+
+# Run on real ESP32 hardware
+pio test -e esp32-s3
+```
+
+For full integration testing with the Wokwi simulator:
+
+```bash
+# Install Wokwi CLI (or use VS Code extension)
+# Build the firmware
+pio run -e esp32-s3
+
+# Run in Wokwi (connects to real MainDeck on your network!)
+wokwi-cli .
+```
+
+See `cabin_boy/README.md` for more details on ESP32 testing options.
 
 ## Tips
 ### Run the script on boot

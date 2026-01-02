@@ -4,7 +4,7 @@ const Cannon = (canvas, ws) => {
     let is_enabled = false;
     const fire = () => {
         if(is_enabled) {
-            ws.send(JSON.stringify({
+            ws.send(MessagePack.encode({
                 type : "C",
                 address: "CANNON",
                 data:{command:"FIRE"}

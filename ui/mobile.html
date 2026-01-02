@@ -30,7 +30,8 @@
 
     </style>
 
-
+    <!-- msgpack for binary WebSocket communication -->
+    <script src="https://cdn.jsdelivr.net/npm/@msgpack/msgpack@3.0.0/dist/msgpack.min.js"></script>
 </head>
 
 <body style="margin:0; padding:0; width:100%; height:100%; background: black">
@@ -53,6 +54,7 @@ let ws = null;
 
 function onload() {
     const URI = "ws://"+ location.hostname +":31337"
+    const { encode, decode } = MessagePack;  // msgpack encoder/decoder
 
     let latestManifest = [];
 
@@ -61,14 +63,15 @@ function onload() {
     const lightningbtn = document.getElementById("lightningbtn");
 
     ws = new WebSocket(URI);
+    ws.binaryType = "arraybuffer";  // Required for msgpack binary data
     ws.addEventListener("open", ()=>{
         // add ourselves to manifest
-        ws.send(JSON.stringify({
+        ws.send(encode({
             type : "SA",
             address: "MOBILE_UI"
         }));
         //subscribe to ALL events so we hear everything
-        ws.send(JSON.stringify({
+        ws.send(encode({
             type : "S",
             address:"*"
         }));
@@ -80,7 +83,7 @@ function onload() {
 
     ws.addEventListener("message", (rawMsg)=>{
         console.log(rawMsg)
-        let msg = JSON.parse(rawMsg.data);
+        let msg = decode(new Uint8Array(rawMsg.data));  // Decode msgpack binary data
         switch (msg.address) {
             case "MOBILE_UI":
             case "*":
@@ -132,12 +135,12 @@ function onload() {
 
     const handleManifest = (manifest) => {
         // Log it
-        if(manifest !== latestManifest)  console.log("NEW MANIFEST " + JSON.stringify(manifest));
+        if(manifest !== latestManifest)  console.log("NEW MANIFEST", manifest);
 
         // request a prop update from everything that wasn't in our last manifest (i.e. new crewmates)
         let newCrewmates = manifest.filter(x => !latestManifest.includes(x));
         for(let m of newCrewmates) {
-            ws.send(JSON.stringify({
+            ws.send(encode({
                 type:"C",
                 address:m,
                 data:{"c": "~P~"} // trying to keep common commands small byte-sizes
@@ -165,11 +168,11 @@ function onload() {
     // set a timer to ensure all UI elements are up to date with the latest manifest
     const manifestInterval = setInterval(()=> handleManifest(latestManifest), 2000);
     // Manifest handling for connected crewmates
-    setTimeout(()=> ws.send(JSON.stringify({type:"GM"})), 100); // GET MANIFEST TYPE,
+    setTimeout(()=> ws.send(encode({type:"GM"})), 100); // GET MANIFEST TYPE,
 
 
     firebtn.onclick = ()=> {
-        ws.send(JSON.stringify({
+        ws.send(encode({
             type : "C",
             address: "CANNON",
             data:{command:"FIRE"}
@@ -177,7 +180,7 @@ function onload() {
     }
 
     singbtn.onclick = ()=> {
-        ws.send(JSON.stringify({
+        ws.send(encode({
             type : "C",
             address: "PUMPKINS",
             data:{command:"SING"}
@@ -185,7 +188,7 @@ function onload() {
     }
 
     lightningbtn.onclick = ()=> {
-        ws.send(JSON.stringify({
+        ws.send(encode({
             type : "C",
             address: "RAIN",
             data:{command:"LIGHTNING"}

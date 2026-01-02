@@ -11,6 +11,8 @@
         /*}*/
 
     </style>
+    <!-- msgpack for binary WebSocket communication -->
+    <script src="https://cdn.jsdelivr.net/npm/@msgpack/msgpack@3.0.0/dist/msgpack.min.js"></script>
     <!-- Fabric makes canvas easier -->
     <script src="js/fabric.min.js"></script>
     <!-- crewmates -->
@@ -30,6 +32,7 @@
 
 <script>
     const URI = "ws://"+ location.hostname +":31337"
+    const { encode, decode } = MessagePack;  // msgpack encoder/decoder
     const throttleDrawEvery=4;
     let frame = 0;
 
@@ -82,14 +85,15 @@
         ]
 
     const ws = new WebSocket(URI);
+    ws.binaryType = "arraybuffer";  // Required for msgpack binary data
     ws.addEventListener("open", ()=>{
         // add ourselves to manifest
-        ws.send(JSON.stringify({
+        ws.send(encode({
             type : "SA",
             address: "CAPTAIN_UI"
         }));
         //subscribe to ALL events so we hear everything
-        ws.send(JSON.stringify({
+        ws.send(encode({
             type : "S",
             address:"*"
         }));
@@ -123,7 +127,7 @@
             // request a prop update from everything that wasn't in our last manifest (i.e. new crewmates)
             let newCrewmates = manifest.filter(x => !latestManifest.includes(x));
             for(let m of newCrewmates) {
-                ws.send(JSON.stringify({
+                ws.send(encode({
                     type:"C",
                     address:m,
                     data:{"c": "~P~"} // trying to keep common commands small byte-sizes
@@ -138,7 +142,7 @@
         // WS msg routing
         ws.addEventListener("message", (rawMsg)=>{
             console.log(rawMsg)
-            let msg = JSON.parse(rawMsg.data);
+            let msg = decode(new Uint8Array(rawMsg.data));  // Decode msgpack binary data
             switch (msg.address) {
                 case "CAPTAIN_UI":
                 case "*":
@@ -160,7 +164,7 @@
         });
 
         // Manifest handling for connected crewmates
-        setTimeout(()=> ws.send(JSON.stringify({type:"GM"})), 100); // GET MANIFEST TYPE,
+        setTimeout(()=> ws.send(encode({type:"GM"})), 100); // GET MANIFEST TYPE,
 
     }
 
